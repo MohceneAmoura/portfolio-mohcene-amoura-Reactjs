@@ -1,11 +1,15 @@
+// Importation des modules
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Charger les variables d'environnement
 dotenv.config();
 
+// Création du serveur Express
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -15,8 +19,16 @@ if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
   process.exit(1);
 }
 
+// Middleware
 app.use(cors());
 app.use(express.json());
+
+// Configuration des chemins pour le déploiement sur Vercel
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Servir le frontend React (remplace "dist" par ton dossier de build)
+app.use(express.static(path.join(__dirname, "dist")));
 
 // Route pour envoyer un email
 app.post("/send-email", async (req, res) => {
@@ -28,7 +40,7 @@ app.post("/send-email", async (req, res) => {
 
   try {
     const transporter = nodemailer.createTransport({
-      host: process.env.MAIL_HOST, // Utilisation de la variable d'environnement correcte
+      host: process.env.MAIL_HOST,
       port: process.env.MAIL_PORT,
       auth: {
         user: process.env.MAIL_USER,
@@ -47,9 +59,14 @@ app.post("/send-email", async (req, res) => {
     res.status(200).json({ success: true, message: "Email envoyé avec succès !" });
 
   } catch (error) {
-    console.error("Erreur lors de l'envoi d'email:", error);
+    console.error("❌ Erreur lors de l'envoi d'email:", error);
     res.status(500).json({ success: false, error: "Erreur lors de l'envoi de l'email." });
   }
+});
+
+// Gérer les routes React et éviter l'erreur 404 sur Vercel
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
 // Lancer le serveur
