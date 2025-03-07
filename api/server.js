@@ -1,17 +1,17 @@
-// Importation des modules
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
-import path from "path";
-import { fileURLToPath } from "url";
 
 // Charger les variables d'environnement
 dotenv.config();
 
 // Création du serveur Express
 const app = express();
-const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
 
 // Vérification des variables d'environnement
 if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
@@ -19,19 +19,8 @@ if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
   process.exit(1);
 }
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Configuration des chemins pour le déploiement sur Vercel
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Servir le frontend React (remplace "dist" par ton dossier de build)
-app.use(express.static(path.join(__dirname, "dist")));
-
 // Route pour envoyer un email
-app.post("/send-email", async (req, res) => {
+app.post("/api/send-email", async (req, res) => {
   const { nom, prenom, email, service, langages, message } = req.body;
 
   if (!nom || !prenom || !email || !service || !langages || !message) {
@@ -64,12 +53,5 @@ app.post("/send-email", async (req, res) => {
   }
 });
 
-// Gérer les routes React et éviter l'erreur 404 sur Vercel
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "dist", "index.html"));
-});
-
-// Lancer le serveur
-app.listen(PORT, () => {
-  console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
-});
+// Exporter l'application pour Vercel
+export default app;
